@@ -24,7 +24,7 @@ if (`PIPELINE.rob.io_commit_arch_valids_0) begin
     end
 
 end
-
+/*
 // 1
 if (`PIPELINE.rob.io_commit_arch_valids_1) begin
     if (cosim_commit(0, $signed(`PIPELINE.rob.io_commit_uops_1_debug_pc), 
@@ -81,3 +81,4 @@ for (int i = 0; i < commits; i++) begin
         cosim_raise_trap(0, `PIPELINE.rob.io_com_xcpt_bits_cause);
     end
 end
+*/

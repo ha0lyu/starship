@@ -13,6 +13,3 @@
 [submodule "repo/rocket-chip-blocks"]
 	path = repo/rocket-chip-blocks
 	url = https://github.com/chipsalliance/rocket-chip-blocks.git
-[submodule "repo/rocket-chip-fpga-shells"]
-	path = repo/rocket-chip-fpga-shells
-	url = https://github.com/chipsalliance/rocket-chip-fpga-shells.git

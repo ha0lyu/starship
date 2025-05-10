@@ -56,13 +56,13 @@ lazy val peripheral_blocks = (project in file("repo/rocket-chip-blocks"))
   .dependsOn(rocket_chip, cde)
   .settings(commonSettings)
 
-lazy val fpga_shells = (project in file("repo/rocket-chip-fpga-shells"))
-  .dependsOn(rocket_chip, peripheral_blocks, cde)
-  .settings(
-    commonSettings,
-    Compile / unmanagedBase := baseDirectory.value,
-    Compile / resourceDirectory := baseDirectory.value
-  )
+// lazy val fpga_shells = (project in file("repo/rocket-chip-fpga-shells"))
+//   .dependsOn(rocket_chip, peripheral_blocks, cde)
+//   .settings(
+//     commonSettings,
+//     Compile / unmanagedBase := baseDirectory.value,
+//     Compile / resourceDirectory := baseDirectory.value
+//   )
 
 lazy val ucb_testchipip = (project in file("repo/testchipip/src"))
   .dependsOn(rocket_chip, peripheral_blocks)
@@ -81,7 +81,7 @@ lazy val ucb_boom = (project in file("repo/riscv-boom/src"))
   )
 
 lazy val starship = (project in file("repo/starship"))
-  .dependsOn(rocket_chip, cde, peripheral_blocks, fpga_shells, ucb_boom)
+  .dependsOn(rocket_chip, cde, peripheral_blocks, ucb_boom) // fpga_shells, 
   .settings(commonSettings)
 
 lazy val root = (project in file("."))

@@ -19,7 +19,7 @@ ifeq ($(shell echo $(GCC_VERSION)\>=9 | bc ),0)
   SCL_PREFIX := source scl_source enable devtoolset-10 &&
 endif
 
-all: bitstream
+all: vlt
 
 
 #######################################
@@ -40,14 +40,40 @@ endif
 
 #######################################
 #                                      
+#         Spike & testcase
+#                                      
+#######################################
+
+# Experience: If you don't have `make clean`, you can comment the following part
+
+$(SPIKE_BUILD)/Makefile:
+	mkdir -p $(SPIKE_BUILD)
+	cd $(SPIKE_BUILD); $(SCL_PREFIX) $(SPIKE_DIR)/configure
+
+$(SPIKE_LIB)&: $(SPIKE_SRC) $(SPIKE_BUILD)/Makefile
+	cd $(SPIKE_BUILD); $(SCL_PREFIX) make -j$(shell nproc) $(notdir $(SPIKE_LIB))
+
+$(TESTCASE_HEX): $(TESTCASE_ELF)
+	riscv64-unknown-elf-objcopy --gap-fill 0			\
+		--set-section-flags .bss=alloc,load,contents	\
+		--set-section-flags .sbss=alloc,load,contents	\
+		--set-section-flags .tbss=alloc,load,contents	\
+		-O binary $< $(TESTCASE_BIN)
+	od -v -An -tx8 $(TESTCASE_BIN) > $@
+	rm $(TESTCASE_BIN)
+
+
+
+#######################################
+#                                      
 #         Verilog Generator
 #                                      
 #######################################
 
 ROCKET_TOP		:= $(STARSHIP_TH)
-ROCKET_CONF		:= starship.With$(STARSHIP_CORE)Core,$(STARSHIP_CONFIG),starship.With$(STARSHIP_FREQ)MHz
+ROCKET_CONF		:= starship.With$(STARSHIP_CORE)Core,$(STARSHIP_CONFIG) #,starship.With$(STARSHIP_FREQ)MHz
 ROCKET_SRC		:= $(SRC)/rocket-chip
-ROCKET_BUILD	:= $(BUILD)/rocket-chip
+ROCKET_BUILD	:= $(BUILD)/$(STARSHIP_CORE)
 ROCKET_SRCS     := $(shell find $(TOP) -name "*.scala")
 ROCKET_OUTPUT	:= $(STARSHIP_CORE).$(lastword $(subst ., ,$(STARSHIP_TOP))).$(lastword $(subst ., ,$(STARSHIP_CONFIG)))
 ROCKET_FIRRTL	:= $(ROCKET_BUILD)/$(ROCKET_OUTPUT).fir
@@ -148,29 +174,6 @@ verilog-patch: verilog
 
 #######################################
 #
-#         Bitstream Generator
-#
-#######################################
-
-VIVADO_TOP			:= $(lastword $(subst ., ,$(STARSHIP_TH)))
-VIVADO_SRC			:= $(SRC)/rocket-chip-fpga-shells
-VIVADO_SCRIPT		:= $(VIVADO_SRC)/xilinx
-VIVADO_BUILD		:= $(BUILD)/vivado
-VIVADO_BITSTREAM 	:= $(VIVADO_BUILD)/$(ROCKET_OUTPUT).bit
-
-$(VIVADO_BITSTREAM): $(ROCKET_INCLUDE) $(VERILOG_SRC)
-	mkdir -p $(VIVADO_BUILD)
-	cd $(VIVADO_BUILD); vivado -mode batch -nojournal \
-		-source $(VIVADO_SCRIPT)/common/tcl/vivado.tcl \
-		-tclargs -F "$(ROCKET_INCLUDE)" \
-		-top-module "$(VIVADO_TOP)" \
-		-ip-vivado-tcls "$(shell find '$(ROCKET_BUILD)' -name '*.vivado.tcl')" \
-		-board "$(STARSHIP_BOARD)"
-
-bitstream: $(VIVADO_BITSTREAM)
-
-#######################################
-#
 #         RTL Simulation
 #
 #######################################
@@ -199,95 +202,6 @@ SPIKE_INCLUDE	:= $(SPIKE_DIR) $(SPIKE_DIR)/cosim $(SPIKE_DIR)/fdt $(SPIKE_DIR)/f
 			       $(SPIKE_DIR)/riscv $(SPIKE_DIR)/softfloat $(SPIKE_BUILD)
 
 export LD_LIBRARY_PATH=$(SPIKE_BUILD)
-
-$(SPIKE_BUILD)/Makefile:
-	mkdir -p $(SPIKE_BUILD)
-	cd $(SPIKE_BUILD); $(SCL_PREFIX) $(SPIKE_DIR)/configure
-
-$(SPIKE_LIB)&: $(SPIKE_SRC) $(SPIKE_BUILD)/Makefile
-	cd $(SPIKE_BUILD); $(SCL_PREFIX) make -j$(shell nproc) $(notdir $(SPIKE_LIB))
-
-
-#######################################
-#
-#            Synopsys VCS
-#
-#######################################
-
-VCS_OUTPUT	:= $(BUILD)/vcs
-VERDI_OUTPUT:= $(BUILD)/verdi
-VCS_BUILD	:= $(VCS_OUTPUT)/build
-VCS_LOG		:= $(VCS_OUTPUT)/log
-VCS_WAVE	:= $(VCS_OUTPUT)/wave
-
-VCS_TARGET	:= $(VCS_BUILD)/$(TB_TOP)
-VCS_INCLUDE	:= $(ROCKET_BUILD)+$(SIM_DIR)
-VCS_CFLAGS	:= -std=c++17 $(addprefix -I,$(SPIKE_INCLUDE)) -I$(ROCKET_BUILD)
-
-VCS_SRC_C	:= $(SIM_DIR)/spike_difftest.cc \
-			   $(SPIKE_LIB) \
-			   $(SIM_DIR)/timer.cc  
-
-VCS_SRC_V	:= $(SIM_DIR)/$(TB_TOP).v \
-			   $(SIM_DIR)/spike_difftest.v \
-			   $(SIM_DIR)/tty.v
-
-VCS_DEFINE	:= +define+MODEL=$(STARSHIP_TH)					\
-			   +define+TOP_DIR=\"$(VCS_OUTPUT)\"			\
-			   +define+INITIALIZE_MEMORY					\
-			   +define+CLOCK_PERIOD=1.0	   					\
-			   +define+DEBUG_FSDB							\
-			   +define+TARGET_$(STARSHIP_CORE)
-
-VCS_PARAL_COM	:= -j$(shell nproc) # -fgp
-VCS_PARAL_RUN	:= # -fgp=num_threads:1,num_fsdb_threads:1 # -fgp=num_cores:$(shell nproc),percent_fsdb_cores:30
-
-VCS_OPTION	:= -quiet -notice -line +rad -full64 +nospecify +notimingcheck -deraceclockdata 		\
-			   -sverilog +systemverilogext+.sva+.pkg+.sv+.SV+.vh+.svh+.svi+ -assert svaext 			\
-			   +vcs+initreg+random +v2k -debug_acc+all -timescale=1ns/10ps +incdir+$(VCS_INCLUDE) 	\
-			   $(VCS_PARAL_COM) -CFLAGS "$(VCS_CFLAGS)" 											\
-			   $(CHISEL_DEFINE) $(VCS_DEFINE)
-VCS_SIM_OPTION	:= +vcs+initreg+random $(VCS_PARAL_RUN) +testcase=$(TESTCASE_ELF)
-
-vcs-wave: 		VCS_SIM_OPTION += +dump +uart_tx=0
-vcs-debug: 		VCS_SIM_OPTION += +verbose +dump +uart_tx=0
-vcs-fuzz: 		VCS_SIM_OPTION += +fuzzing +uart_tx=0
-vcs-fuzz-debug:	VCS_SIM_OPTION += +fuzzing +verbose +dump +uart_tx=0
-vcs-jtag: 		VCS_SIM_OPTION += +jtag_rbb_enable=1 +verbose +uart_tx=0
-vcs-jtag-debug: VCS_SIM_OPTION += +jtag_rbb_enable=1 +verbose +dump +uart_tx=0
-
-$(VCS_TARGET): $(VERILOG_SRC) $(ROCKET_ROM_HEX) $(ROCKET_INCLUDE) $(VCS_SRC_V) $(VCS_SRC_C) $(SPIKE_LIB)
-	$(MAKE) verilog-patch
-	mkdir -p $(VCS_BUILD) $(VCS_LOG) $(VCS_WAVE)
-	cd $(VCS_BUILD); $(SCL_PREFIX) vcs $(VCS_OPTION) -l $(VCS_LOG)/vcs.log -top $(TB_TOP) \
-		-f $(ROCKET_INCLUDE) $(VCS_SRC_V) $(VCS_SRC_C) -o $@
-
-$(TESTCASE_HEX): $(TESTCASE_ELF)
-	riscv64-unknown-elf-objcopy --gap-fill 0			\
-		--set-section-flags .bss=alloc,load,contents	\
-		--set-section-flags .sbss=alloc,load,contents	\
-		--set-section-flags .tbss=alloc,load,contents	\
-		-O binary $< $(TESTCASE_BIN)
-	od -v -An -tx8 $(TESTCASE_BIN) > $@
-	rm $(TESTCASE_BIN)
-
-vcs: $(VCS_TARGET) $(TESTCASE_HEX)
-	mkdir -p $(VCS_BUILD) $(VCS_LOG) $(VCS_WAVE)
-	cd $(VCS_BUILD); \
-	$(VCS_TARGET) -quiet +ntb_random_seed_automatic -l $(VCS_LOG)/sim.log  \
-		$(VCS_SIM_OPTION) 2>&1 | tee /tmp/rocket.log; exit "$${PIPESTATUS[0]}";
-
-vcs-wave vcs-debug: vcs
-vcs-fuzz vcs-fuzz-debug: vcs
-vcs-jtag vcs-jtag-debug: vcs
-
-verdi:
-	mkdir -p $(VERDI_OUTPUT)
-	touch $(VERDI_OUTPUT)/signal.rc
-	cd $(VERDI_OUTPUT); \
-	verdi -$(VCS_OPTION) -q -ssy -ssv -ssz -autoalias \
-		-ssf $(VCS_WAVE)/starship.fsdb -sswr $(VERDI_OUTPUT)/signal.rc \
-		-logfile $(VCS_LOG)/verdi.log -top $(TB_TOP) -f $(ROCKET_INCLUDE) $(VCS_SRC_V) &
 
 #######################################
 #
@@ -342,32 +256,6 @@ vlt-jtag-debug: vlt
 
 gtkwave:
 	gtkwave $(VLT_WAVE)/starship.vcd
-
-#######################################
-#
-#             Sythesis
-#
-#######################################
-
-#######################################
-#
-#            Synopsys DC
-#
-#######################################
-
-DC_TOP		:= $(lastword $(subst ., ,$(STARSHIP_TH)))
-DC_SRC		:= $(ASIC)/scripts/syn
-DC_OUTPUT	:= $(BUILD)/syn
-DC_BUILD	:= $(DC_OUTPUT)/build
-DC_LOG		:= $(DC_OUTPUT)/log
-DC_NETLIST	:= $(DC_OUTPUT)/netlist
-
-#######################################
-#
-#              Yosys
-#
-#######################################
-
 
 #######################################
 #
