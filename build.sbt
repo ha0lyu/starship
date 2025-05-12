@@ -34,6 +34,7 @@ lazy val commonSettings = Seq(
 )
 
 val rocketChipDir = file("repo/rocket-chip")
+val dependenciesDir = "repo/rocket-chip/dependencies"
 
 def freshProject(name: String, dir: File): Project = {
   Project(id = name, base = dir / "src")
@@ -61,21 +62,26 @@ lazy val scalaTestSettings =  Seq(
   )
 )
 
+lazy val cde = (project in file(dependenciesDir + "/cde"))
+  .settings(commonSettings)
+  .settings(Compile / scalaSource := baseDirectory.value / "cde/src/chipsalliance/rocketchip")
+
 // if this have problem, change it: repo/hardfloat:4225367ed
-lazy val hardfloat = freshProject("hardfloat", file("repo/rocket-chip/hardfloat/hardfloat"))
+lazy val hardfloat = (project in file(dependenciesDir + "/hardfloat"))
   .settings(chiselSettings)
   .settings(commonSettings)
   .settings(scalaTestSettings)
+  .settings(Compile / scalaSource := baseDirectory.value / "hardfloat/src")
 
 lazy val rocketMacros  = (project in rocketChipDir / "macros")
   .settings(commonSettings)
   .settings(scalaTestSettings)
 
-lazy val diplomacy = freshProject("diplomacy", file("repo/diplomacy/diplomacy"))
+lazy val diplomacy = (project in file(dependenciesDir + "/diplomacy"))
   .dependsOn(cde)
   .settings(commonSettings)
   .settings(chiselSettings)
-  .settings(Compile / scalaSource := baseDirectory.value / "diplomacy")
+  .settings(Compile / scalaSource := baseDirectory.value / "diplomacy/src")
 
 lazy val rocketchip = freshProject("rocketchip", rocketChipDir)
   .dependsOn(hardfloat, rocketMacros, diplomacy, cde)
@@ -89,16 +95,13 @@ lazy val rocketchip = freshProject("rocketchip", rocketChipDir)
       "org.scala-graph" %% "graph-core" % "1.13.5"
     )
   )
+
 lazy val rocketLibDeps = (rocketchip / Keys.libraryDependencies)
 
 lazy val testchipip = (project in file("repo/testchipip"))
   .dependsOn(rocketchip, rocketchip_blocks)
   .settings(libraryDependencies ++= rocketLibDeps.value)
   .settings(commonSettings)
-
-lazy val cde = (project in file("repo/rocket-chip/cde"))
-  .settings(commonSettings)
-  .settings(Compile / scalaSource := baseDirectory.value / "cde/src/chipsalliance/rocketchip")
 
 lazy val rocketchip_blocks = (project in file("repo/rocket-chip-blocks"))
   .dependsOn(rocketchip)
