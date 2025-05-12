@@ -1,9 +1,7 @@
 package starship
 
-// import starship.fpga._
-
 import chisel3._
-
+import chisel3.util._
 import freechips.rocketchip.system._
 import org.chipsalliance.cde.config._
 import freechips.rocketchip.subsystem._
@@ -11,11 +9,6 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink._
 
-// import sifive.fpgashells.shell._
-// import sifive.fpgashells.clocks._
-// import sifive.fpgashells.ip.xilinx._
-// import sifive.fpgashells.shell.xilinx._
-// import sifive.fpgashells.devices.xilinx.xilinxvc707mig._
 
 // import sifive.blocks.devices.uart._
 // import sifive.blocks.devices.spi._
@@ -35,7 +28,6 @@ case object FrequencyKey extends Field[Double](50)   // 50 MHz
 
 class WithRocketCore extends Config(new WithNBigCores(1))
 class WithBOOMCore extends Config(new boom.common.WithNSmallBooms(1))
-class WithCVA6Core extends Config(new starship.cva6.WithNCVA6Cores(1))
 
 class StarshipBaseConfig extends Config(
   // new WithRoccExample ++

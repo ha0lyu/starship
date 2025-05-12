@@ -1,87 +1,117 @@
-/* 
- * Copyright (C) 2020-2023 by phantom
- * Email: phantom@zju.edu.cn
- * This file is under MIT License, see https://www.phvntom.tech/LICENSE.txt
- */
+
+// Reference: https://github.com/ucb-bar/chipyard/blob/dd2ce08/build.sbt
 
 Global / lintUnusedKeysOnLoad := false
 
-val chiselVersion = "3.6.0"
+import Tests._
+
+val chisel6Version = "6.5.0"
+val scalaVersionFromChisel = "2.13.12"
 
 lazy val commonSettings = Seq(
-  organization := "zjv",
-  version := "0.2",
-  scalaVersion := "2.13.10",
+  organization := "ISCAS",
+  version := "0.1",
+  scalaVersion := scalaVersionFromChisel,
   scalacOptions ++= Seq(
     "-deprecation",
-    "-feature",
     "-unchecked",
-    "-language:reflectiveCalls",
-    "-Ymacro-annotations"
-  ),
-  addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full),
-  libraryDependencies ++= Seq(
-    "com.github.scopt" %% "scopt" % "3.7.1",
-    "edu.berkeley.cs" %% "chisel3" % chiselVersion,
-    "com.lihaoyi" %% "mainargs" % "0.5.4",
-  ),
+    "-Ytasty-reader",
+    "-Ymacro-annotations"),
+  allDependencies := {
+    val dropDeps = Seq(("edu.berkeley.cs", "rocketchip"))
+    allDependencies.value.filterNot { dep =>
+      dropDeps.contains((dep.organization, dep.name))
+    }
+  },
+  libraryDependencies += "com.lihaoyi" %% "sourcecode" % "0.3.1",
+  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+
+  exportJars := true,
   resolvers ++=
     Resolver.sonatypeOssRepos("snapshots") ++
     Resolver.sonatypeOssRepos("releases") :+
     Resolver.mavenLocal
 )
 
-lazy val cde = (project in file("repo/rocket-chip/cde"))
-  .settings(
-    commonSettings,
-    Compile / scalaSource := baseDirectory.value / "cde/src/chipsalliance/rocketchip"
-  )
+val rocketChipDir = file("repo/rocket-chip")
 
-lazy val rocket_macros  = (project in file("repo/rocket-chip/macros"))
+def freshProject(name: String, dir: File): Project = {
+  Project(id = name, base = dir / "src")
+    .settings(
+      Compile / scalaSource := baseDirectory.value / "main" / "scala",
+      Compile / resourceDirectory := baseDirectory.value / "main" / "resources"
+    )
+}
+
+lazy val chisel6Settings = Seq(
+  libraryDependencies ++= Seq("org.chipsalliance" %% "chisel" % chisel6Version),
+  addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chisel6Version cross CrossVersion.full)
+)
+
+lazy val chiselSettings = chisel6Settings ++ Seq(
+  libraryDependencies ++= Seq(
+    "org.apache.commons" % "commons-lang3" % "3.12.0",
+    "org.apache.commons" % "commons-text" % "1.9"
+  )
+)
+
+lazy val scalaTestSettings =  Seq(
+  libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "3.2.+" % "test"
+  )
+)
+
+// if this have problem, change it: repo/hardfloat:4225367ed
+lazy val hardfloat = freshProject("hardfloat", file("repo/rocket-chip/hardfloat/hardfloat"))
+  .settings(chiselSettings)
+  .settings(commonSettings)
+  .settings(scalaTestSettings)
+
+lazy val rocketMacros  = (project in rocketChipDir / "macros")
+  .settings(commonSettings)
+  .settings(scalaTestSettings)
+
+lazy val diplomacy = freshProject("diplomacy", file("repo/diplomacy/diplomacy"))
+  .dependsOn(cde)
+  .settings(commonSettings)
+  .settings(chiselSettings)
+  .settings(Compile / scalaSource := baseDirectory.value / "diplomacy")
+
+lazy val rocketchip = freshProject("rocketchip", rocketChipDir)
+  .dependsOn(hardfloat, rocketMacros, diplomacy, cde)
+  .settings(commonSettings)
+  .settings(chiselSettings)
+  .settings(scalaTestSettings)
   .settings(
-    commonSettings,
     libraryDependencies ++= Seq(
-      "org.json4s" %% "json4s-jackson" % "4.0.6",
+      "com.lihaoyi" %% "mainargs" % "0.5.0",
+      "org.json4s" %% "json4s-jackson" % "4.0.5",
+      "org.scala-graph" %% "graph-core" % "1.13.5"
     )
   )
+lazy val rocketLibDeps = (rocketchip / Keys.libraryDependencies)
 
-lazy val ucb_hardfloat = (project in file("repo/rocket-chip/hardfloat/hardfloat"))
+lazy val testchipip = (project in file("repo/testchipip"))
+  .dependsOn(rocketchip, rocketchip_blocks)
+  .settings(libraryDependencies ++= rocketLibDeps.value)
   .settings(commonSettings)
 
-lazy val rocket_chip = (project in file("repo/rocket-chip"))
-  .dependsOn(cde, rocket_macros, ucb_hardfloat)
+lazy val cde = (project in file("repo/rocket-chip/cde"))
+  .settings(commonSettings)
+  .settings(Compile / scalaSource := baseDirectory.value / "cde/src/chipsalliance/rocketchip")
+
+lazy val rocketchip_blocks = (project in file("repo/rocket-chip-blocks"))
+  .dependsOn(rocketchip)
+  .settings(libraryDependencies ++= rocketLibDeps.value)
   .settings(commonSettings)
 
-lazy val peripheral_blocks = (project in file("repo/rocket-chip-blocks"))
-  .dependsOn(rocket_chip, cde)
+lazy val boom = freshProject("boom", file("repo/riscv-boom"))
+  .dependsOn(rocketchip)
+  .settings(libraryDependencies ++= rocketLibDeps.value)
   .settings(commonSettings)
-
-// lazy val fpga_shells = (project in file("repo/rocket-chip-fpga-shells"))
-//   .dependsOn(rocket_chip, peripheral_blocks, cde)
-//   .settings(
-//     commonSettings,
-//     Compile / unmanagedBase := baseDirectory.value,
-//     Compile / resourceDirectory := baseDirectory.value
-//   )
-
-lazy val ucb_testchipip = (project in file("repo/testchipip/src"))
-  .dependsOn(rocket_chip, peripheral_blocks)
-  .settings(
-    commonSettings,
-    Compile / scalaSource := baseDirectory.value / "main/scala",
-    Compile / resourceDirectory := baseDirectory.value / "main/resources"
-  )
-
-lazy val ucb_boom = (project in file("repo/riscv-boom/src"))
-  .dependsOn(rocket_chip, ucb_testchipip)
-  .settings(
-    commonSettings,
-    Compile / scalaSource := baseDirectory.value / "main/scala",
-    Compile / resourceDirectory := baseDirectory.value / "main/resources"
-  )
 
 lazy val starship = (project in file("repo/starship"))
-  .dependsOn(rocket_chip, cde, peripheral_blocks, ucb_boom) // fpga_shells, 
+  .dependsOn(rocketchip, cde, rocketchip_blocks, boom)
   .settings(commonSettings)
 
 lazy val root = (project in file("."))
