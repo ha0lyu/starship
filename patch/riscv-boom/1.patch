@@ -1,8 +1,21 @@
-diff --git a/src/main/scala/common/parameters.scala b/src/main/scala/common/parameters.scala
-index ac64027a..e6b8b30a 100644
---- a/src/main/scala/common/parameters.scala
-+++ b/src/main/scala/common/parameters.scala
-@@ -99,7 +99,7 @@ case class BoomCoreParams(
+diff --git a/src/main/scala/v3/common/parameters.scala b/src/main/scala/v3/common/parameters.scala
+index 2f5e1268..fef38a71 100644
+--- a/src/main/scala/v3/common/parameters.scala
++++ b/src/main/scala/v3/common/parameters.scala
+@@ -100,7 +100,7 @@ case class BoomCoreParams(
+   trace: Boolean = false,
+ 
+   /* debug stuff */
+-  enableCommitLogPrintf: Boolean = false,
++  enableCommitLogPrintf: Boolean = true,
+   enableBranchPrintf: Boolean = false,
+   enableMemtracePrintf: Boolean = false
+ 
+diff --git a/src/main/scala/v4/common/parameters.scala b/src/main/scala/v4/common/parameters.scala
+index 0e079fc9..710b6b37 100644
+--- a/src/main/scala/v4/common/parameters.scala
++++ b/src/main/scala/v4/common/parameters.scala
+@@ -117,7 +117,7 @@ case class BoomCoreParams(
    trace: Boolean = false,
  
    /* debug stuff */

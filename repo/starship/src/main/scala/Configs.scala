@@ -9,25 +9,15 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink._
 
-
-// import sifive.blocks.devices.uart._
-// import sifive.blocks.devices.spi._
+import freechips.rocketchip.rocket.{WithNBigCores}
+import boom.v3.common.{WithNSmallBooms}
 
 import sys.process._
 
 case object FrequencyKey extends Field[Double](50)   // 50 MHz
 
-// class WithFrequency(MHz: Double) extends Config((site, here, up) => {
-//   case FrequencyKey => MHz
-// })
-
-// class With25MHz  extends WithFrequency(25)
-// class With50MHz  extends WithFrequency(50)
-// class With100MHz extends WithFrequency(100)
-// class With150MHz extends WithFrequency(150)
-
 class WithRocketCore extends Config(new WithNBigCores(1))
-class WithBOOMCore extends Config(new boom.common.WithNSmallBooms(1))
+class WithBOOMCore extends Config(new WithNSmallBooms(1))
 
 class StarshipBaseConfig extends Config(
   // new WithRoccExample ++

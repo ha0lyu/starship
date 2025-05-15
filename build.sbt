@@ -5,8 +5,8 @@ Global / lintUnusedKeysOnLoad := false
 
 import Tests._
 
-val chisel6Version = "6.5.0"
-val scalaVersionFromChisel = "2.13.12"
+val chisel6Version = "3.6-SNAPSHOT"
+val scalaVersionFromChisel = "2.13.10"
 
 lazy val commonSettings = Seq(
   organization := "ISCAS",
@@ -45,8 +45,10 @@ def freshProject(name: String, dir: File): Project = {
 }
 
 lazy val chisel6Settings = Seq(
-  libraryDependencies ++= Seq("org.chipsalliance" %% "chisel" % chisel6Version),
-  addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chisel6Version cross CrossVersion.full)
+  // libraryDependencies ++= Seq("org.chipsalliance" %% "chisel" % chisel6Version),
+  // addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chisel6Version cross CrossVersion.full)
+  addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.6-SNAPSHOT" cross CrossVersion.full),
+  libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.6-SNAPSHOT"
 )
 
 lazy val chiselSettings = chisel6Settings ++ Seq(

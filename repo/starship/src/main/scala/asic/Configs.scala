@@ -11,7 +11,8 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink._
 
-// import sifive.blocks.devices.uart._
+import sifive.blocks.devices.uart._
+import freechips.rocketchip.resources.{DTSTimebase}
 
 
 class WithPeripherals extends Config((site, here, up) => {

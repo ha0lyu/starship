@@ -1,16 +1,30 @@
-diff --git a/src/main/scala/rocket/IBuf.scala b/src/main/scala/rocket/IBuf.scala
-index 76f8ad982..84d1184e9 100644
---- a/src/main/scala/rocket/IBuf.scala
-+++ b/src/main/scala/rocket/IBuf.scala
-@@ -80,6 +80,11 @@ class IBuf(implicit p: Parameters) extends CoreModule {
+diff --git a/src/main/scala/rocket/RocketCore.scala b/src/main/scala/rocket/RocketCore.scala
+index 1491a4143..94e202157 100644
+--- a/src/main/scala/rocket/RocketCore.scala
++++ b/src/main/scala/rocket/RocketCore.scala
+@@ -5,7 +5,7 @@ package freechips.rocketchip.rocket
  
-   io.btb_resp := io.imem.bits.btb
-   io.pc := Mux(nBufValid > 0.U, buf.pc, io.imem.bits.pc)
-+val randomizer = Module(new MagicMaskerBlackbox)
-+  randomizer.io.clock := clock
-+  randomizer.io.in := inst
-+  randomizer.io.pc := io.pc.asSInt
-+  randomizer.io.en := io.inst(0).valid
-   expand(0, 0.U, inst)
+ import chisel3._
+ import chisel3.util._
+-import chisel3.withClock
++import chisel3.{withClock, dontTouch}
+ import org.chipsalliance.cde.config.Parameters
+ import freechips.rocketchip.tile._
+ import freechips.rocketchip.util._
+@@ -31,7 +31,7 @@ case class RocketCoreParams(
+   useZbs: Boolean = false,
+   nLocalInterrupts: Int = 0,
+   useNMI: Boolean = false,
+-  nBreakpoints: Int = 1,
++  nBreakpoints: Int = 3,
+   useBPWatch: Boolean = false,
+   mcontextWidth: Int = 0,
+   scontextWidth: Int = 0,
+@@ -339,6 +339,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
+   val id_npc = (ibuf.io.pc.asSInt + ImmGen(IMM_UJ, id_inst(0))).asUInt
  
-   def expand(i: Int, j: UInt, curInst: UInt): Unit = if (i < retireWidth) {
+   val csr = Module(new CSRFile(perfEvents, coreParams.customCSRs.decls, tile.roccCSRs.flatten, tile.rocketParams.beuAddr.isDefined))
++  dontTouch(csr.io)
+   val id_csr_en = id_ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W)
+   val id_system_insn = id_ctrl.csr === CSR.I
+   val id_csr_ren = id_ctrl.csr.isOneOf(CSR.S, CSR.C) && id_expanded_inst(0).rs1 === 0.U

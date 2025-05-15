@@ -1,0 +1,20 @@
+diff --git a/src/main/scala/devices/uart/UARTPeriphery.scala b/src/main/scala/devices/uart/UARTPeriphery.scala
+index c56ec34..0e965b7 100644
+--- a/src/main/scala/devices/uart/UARTPeriphery.scala
++++ b/src/main/scala/devices/uart/UARTPeriphery.scala
+@@ -14,6 +14,15 @@ trait HasPeripheryUART { this: BaseSubsystem =>
+   val uart = InModuleBody { uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")) } }
+ }
+ 
++// Changed
++trait HasPeripheryUARTBundle {
++  val uart: Seq[UARTPortIO]
++}
++
++trait HasPeripheryUARTModuleImp extends LazyRawModuleImp  with HasPeripheryUARTBundle {
++  val outer: HasPeripheryUART
++  val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")) }
++}
+ /*
+    Copyright 2016 SiFive, Inc.
+ 

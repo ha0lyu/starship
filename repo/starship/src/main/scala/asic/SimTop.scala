@@ -13,6 +13,8 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink._
 import sifive.blocks.devices.uart._
+import freechips.rocketchip.resources.DeviceSnippet
+import sifive.blocks.devices.uart.HasPeripheryUARTModuleImp
 
 class StarshipSimTop(implicit p: Parameters) extends StarshipSystem
     with CanHaveMasterAXI4MemPort
@@ -46,10 +48,19 @@ class TestHarness()(implicit p: Parameters) extends Module {
   })
 
   val ldut = LazyModule(new StarshipSimTop)
-  val dut = Module(ldut.module)
 
-  // Allow the debug ndreset to reset the dut, but not until the initial reset has completed
-  dut.reset := (reset.asBool | ldut.debug.map { debug => AsyncResetReg(debug.ndreset) }.getOrElse(false.B)).asBool
+  // error: value reset is not a member of starship.asic.StarshipSimTopModuleImp
+  // val dut = Module(ldut.module)
+  // // Allow the debug ndreset to reset the dut, but not until the initial reset has completed
+  // dut.reset := (reset.asBool | ldut.debug.map { debug => AsyncResetReg(debug.ndreset) }.getOrElse(false.B)).asBool
+
+  // fix: value reset is not a member of starship.asic.StarshipSimTopModuleImp
+  val customReset = (reset.asBool | ldut.debug.map { debug =>
+    AsyncResetReg(debug.ndreset)
+  }.getOrElse(false.B)).asBool
+  val dut = withReset(customReset) {
+    Module(ldut.module)
+  }
 
   dut.dontTouchPorts()
   dut.tieOffInterrupts()

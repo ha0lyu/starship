@@ -88,7 +88,7 @@ class MagicDevice(params: MagicParams, beatBytes: Int)(implicit p: Parameters)
 trait CanHavePeripheryMagicDevice { this: BaseSubsystem =>
   val MagicOpt = p(MagicKey).map { params =>
     val tlbus = locateTLBusWrapper(p(MagicAttachKey).slaveWhere)
-    val magic = LazyModule(new MagicDevice(params, cbus.beatBytes))
+    val magic = LazyModule(new MagicDevice(params, tlbus.beatBytes))
     magic.node := tlbus.coupleTo("magic") { TLFragmenter(tlbus) := _ }
     magic
   }

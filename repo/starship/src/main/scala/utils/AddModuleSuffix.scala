@@ -38,7 +38,7 @@ class AddModuleSuffix extends Transform with DependencyAPIMigration {
     val reNameModules = state.circuit.modules.map(
       m => {
         renames.record(ModuleTarget(state.circuit.main, m.name), ModuleTarget(state.circuit.main, addSuffix(m.name)))
-        m.mapString(addSuffix).mapStmt(onStmt)
+        m.mapString(addSuffix).mapStmt(onStmt(_))
       }
     )
 

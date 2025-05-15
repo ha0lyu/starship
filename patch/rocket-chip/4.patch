@@ -1,8 +1,8 @@
 diff --git a/src/main/scala/tile/FPU.scala b/src/main/scala/tile/FPU.scala
-index 174cd38c7..2e1508319 100644
+index 1affeb487..4c51a0746 100644
 --- a/src/main/scala/tile/FPU.scala
 +++ b/src/main/scala/tile/FPU.scala
-@@ -797,7 +797,7 @@ class FPU(cfg: FPUParams)(implicit p: Parameters) extends FPUModule()(p) {
+@@ -821,7 +821,7 @@ class FPU(cfg: FPUParams)(implicit p: Parameters) extends FPUModule()(p) {
      regfile(load_wb_tag) := wdata
      assert(consistent(wdata))
      if (enableCommitLog)
@@ -11,7 +11,7 @@ index 174cd38c7..2e1508319 100644
      if (useDebugROB)
        DebugROB.pushWb(clock, reset, io.hartid, load_wb, load_wb_tag + 32.U, ieee(wdata))
      frfWriteBundle(0).wrdst := load_wb_tag
-@@ -935,11 +935,12 @@ class FPU(cfg: FPUParams)(implicit p: Parameters) extends FPUModule()(p) {
+@@ -965,11 +965,12 @@ class FPU(cfg: FPUParams)(implicit p: Parameters) extends FPUModule()(p) {
    val wtypeTag = Mux(divSqrt_wen, divSqrt_typeTag, wbInfo(0).typeTag)
    val wdata = box(Mux(divSqrt_wen, divSqrt_wdata, (pipes.map(_.res.data): Seq[UInt])(wbInfo(0).pipeid)), wtypeTag)
    val wexc = (pipes.map(_.res.exc): Seq[UInt])(wbInfo(0).pipeid)
