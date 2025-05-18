@@ -3,8 +3,8 @@
 
 STARSHIP_CORE	?= Rocket
 STARSHIP_FREQ	?= 100
-STARSHIP_TH = starship.asic.TestHarness
-STARSHIP_TOP = starship.asic.StarshipSimTop
+STARSHIP_TH = starship.TestHarness
+STARSHIP_TOP = starship.StarshipSimTop
 STARSHIP_CONFIG = starship.asic.StarshipSimConfig
 
 

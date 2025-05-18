@@ -91,28 +91,29 @@ verilog-debug: FIRRTL_DEBUG_OPTION ?= -ll info
 
 $(ROCKET_FIRRTL) $(ROCKET_DTS) $(ROCKET_ROMCONF) $(ROCKET_ANNO)&: $(ROCKET_SRCS)
 	mkdir -p $(ROCKET_BUILD)
-	sbt "runMain starship.utils.stage.FIRRTLGenerator \
+	mill starship.runMain starship.FIRRTLGenerator \
 		--dir $(ROCKET_BUILD) \
 		--top $(ROCKET_TOP) \
 		--config $(ROCKET_CONF) \
-		--name $(ROCKET_OUTPUT)"
+		--name $(ROCKET_OUTPUT)
 
 $(ROCKET_TOP_VERILOG) $(ROCKET_TOP_INCLUDE) $(ROCKET_TOP_MEMCONF) $(ROCKET_TH_VERILOG) $(ROCKET_TH_INCLUDE) $(ROCKET_TH_MEMCONF)&: $(ROCKET_FIRRTL)
 	mkdir -p $(ROCKET_BUILD)
-	sbt "runMain starship.utils.stage.RTLGenerator \
+	mill runMain starship.RTLGenerator \
 		--infer-rw $(STARSHIP_TOP) \
 		-T $(STARSHIP_TOP) -oinc $(ROCKET_TOP_INCLUDE) \
 		--repl-seq-mem -c:$(STARSHIP_TOP):-o:$(ROCKET_TOP_MEMCONF) \
 		-faf $(ROCKET_ANNO) -fct firrtl.passes.InlineInstances \
 		-X verilog $(FIRRTL_DEBUG_OPTION) \
-		-i $< -o $(ROCKET_TOP_VERILOG)"
-	sbt "runMain starship.utils.stage.RTLGenerator \
+		-i $< -o $(ROCKET_TOP_VERILOG)
+
+	mill runMain starship.RTLGenerator \
 		--infer-rw $(STARSHIP_TH) \
 		-T $(STARSHIP_TOP) -TH $(STARSHIP_TH) -oinc $(ROCKET_TH_INCLUDE) \
 		--repl-seq-mem -c:$(STARSHIP_TH):-o:$(ROCKET_TH_MEMCONF) \
 		-faf $(ROCKET_ANNO) -fct firrtl.passes.InlineInstances \
 		-X verilog $(FIRRTL_DEBUG_OPTION) \
-		-i $< -o $(ROCKET_TH_VERILOG)"
+		-i $< -o $(ROCKET_TH_VERILOG)
 	touch $(ROCKET_TOP_INCLUDE) $(ROCKET_TH_INCLUDE)
 
 

@@ -60,6 +60,11 @@ class MagicDevice(params: MagicParams, beatBytes: Int)(implicit p: Parameters)
                        field_name.zip(field_offset).map(pair => "#define MAGIC_" + pair._1.toUpperCase + " 0x0" + pair._2.toHexString + "\n").mkString +
                        "#define MAX_MAGIC_SPACE " + "0x0" + (field_name.size*8).toHexString + "\n" +
                        "#endif\n"
+
+    // This code will through error, cuz this path doesn't exist. 
+    // Fix: run `mkdir ./build/rocket-chip/`
+    //      or change `rocket-chip` to `STARSHIP_CORE`
+    //      or change Makefile
     Files.write(Paths.get("./build/rocket-chip/magic_device.h"), field_header.getBytes(StandardCharsets.UTF_8))
 
     val field_wire = field_offset.map(_ => Wire(new DecoupledIO(UInt(params.width.W))))

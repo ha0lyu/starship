@@ -1,4 +1,5 @@
-package starship.utils.stage
+package starship
+// package starship.util.stage
 
 import mainargs._
 import chisel3.RawModule
@@ -6,7 +7,10 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import firrtl.options.{Dependency, PhaseManager, TargetDirAnnotation}
 import freechips.rocketchip.diplomacy.LazyModule
 import org.chipsalliance.cde.config.{Config, Parameters}
-
+import starship.utils.stage._
+import starship.asic._
+import firrtl.options.{StageMain}
+import starship.utils.stage._
 
 object FIRRTLGenerator {
   @main def elaborate(
@@ -56,4 +60,7 @@ object FIRRTLGenerator {
 
   def main(args: Array[String]): Unit = ParserForMethods(this).runOrExit(args)
 }
+
+
+object RTLGenerator extends StageMain(new StarshipStage)
 

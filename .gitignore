@@ -25,3 +25,6 @@ repo/rocket-chip/cde
 repo/rocket-chip/hardfloat
 repo/rocket-chip/torture
 repo/rocket-chip/src/main/scala/util/InsnRandom.scala
+
+# mill
+out/
