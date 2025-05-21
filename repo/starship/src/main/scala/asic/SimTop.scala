@@ -45,7 +45,7 @@ class TestHarness()(implicit p: Parameters) extends Module {
   })
   val ldut = LazyModule(new StarshipSimTop)
   val dut = Module(ldut.module)
-
+  io.success := DontCare
   // Allow the debug ndreset to reset the dut, but not until the initial reset has completed
   // fix: reset is not a member of dut
   ldut.io_clocks.get.elements.values.foreach(_.clock := clock)

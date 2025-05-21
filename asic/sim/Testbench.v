@@ -184,9 +184,9 @@ module Testbench;
 
   TestHarness testHarness(
     .clock(clock),
-    .reset(reset),
-    .io_uart_tx(),
-    .io_uart_rx(1'b0)
+    .reset(reset)
+    // .io_uart_tx(),
+    // .io_uart_rx(1'b0)
   // .io_uart_tx(uart_tx),
   // .io_uart_rx(uart_rx)
   );

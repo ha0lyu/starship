@@ -40,32 +40,6 @@ endif
 
 #######################################
 #                                      
-#         Spike & testcase
-#                                      
-#######################################
-
-# Experience: If you don't have `make clean`, you can comment the following part
-
-$(SPIKE_BUILD)/Makefile:
-	mkdir -p $(SPIKE_BUILD)
-	cd $(SPIKE_BUILD); $(SCL_PREFIX) $(SPIKE_DIR)/configure
-
-$(SPIKE_LIB)&: $(SPIKE_SRC) $(SPIKE_BUILD)/Makefile
-	cd $(SPIKE_BUILD); $(SCL_PREFIX) make -j$(shell nproc) $(notdir $(SPIKE_LIB))
-
-$(TESTCASE_HEX): $(TESTCASE_ELF)
-	riscv64-unknown-elf-objcopy --gap-fill 0			\
-		--set-section-flags .bss=alloc,load,contents	\
-		--set-section-flags .sbss=alloc,load,contents	\
-		--set-section-flags .tbss=alloc,load,contents	\
-		-O binary $< $(TESTCASE_BIN)
-	od -v -An -tx8 $(TESTCASE_BIN) > $@
-	rm $(TESTCASE_BIN)
-
-
-
-#######################################
-#                                      
 #         Verilog Generator
 #                                      
 #######################################
@@ -73,7 +47,7 @@ $(TESTCASE_HEX): $(TESTCASE_ELF)
 ROCKET_TOP		:= $(STARSHIP_TH)
 ROCKET_CONF		:= starship.With$(STARSHIP_CORE)Core,$(STARSHIP_CONFIG) #,starship.With$(STARSHIP_FREQ)MHz
 ROCKET_SRC		:= $(SRC)/rocket-chip
-ROCKET_BUILD	:= $(BUILD)/$(STARSHIP_CORE)
+ROCKET_BUILD	:= $(BUILD)/rocket-chip
 ROCKET_SRCS     := $(shell find $(TOP) -name "*.scala")
 ROCKET_OUTPUT	:= $(STARSHIP_CORE).$(lastword $(subst ., ,$(STARSHIP_TOP))).$(lastword $(subst ., ,$(STARSHIP_CONFIG)))
 ROCKET_FIRRTL	:= $(ROCKET_BUILD)/$(ROCKET_OUTPUT).fir
@@ -99,7 +73,7 @@ $(ROCKET_FIRRTL) $(ROCKET_DTS) $(ROCKET_ROMCONF) $(ROCKET_ANNO)&: $(ROCKET_SRCS)
 
 $(ROCKET_TOP_VERILOG) $(ROCKET_TOP_INCLUDE) $(ROCKET_TOP_MEMCONF) $(ROCKET_TH_VERILOG) $(ROCKET_TH_INCLUDE) $(ROCKET_TH_MEMCONF)&: $(ROCKET_FIRRTL)
 	mkdir -p $(ROCKET_BUILD)
-	mill runMain starship.RTLGenerator \
+	mill starship.runMain starship.RTLGenerator \
 		--infer-rw $(STARSHIP_TOP) \
 		-T $(STARSHIP_TOP) -oinc $(ROCKET_TOP_INCLUDE) \
 		--repl-seq-mem -c:$(STARSHIP_TOP):-o:$(ROCKET_TOP_MEMCONF) \
@@ -107,7 +81,7 @@ $(ROCKET_TOP_VERILOG) $(ROCKET_TOP_INCLUDE) $(ROCKET_TOP_MEMCONF) $(ROCKET_TH_VE
 		-X verilog $(FIRRTL_DEBUG_OPTION) \
 		-i $< -o $(ROCKET_TOP_VERILOG)
 
-	mill runMain starship.RTLGenerator \
+	mill starship.runMain starship.RTLGenerator \
 		--infer-rw $(STARSHIP_TH) \
 		-T $(STARSHIP_TOP) -TH $(STARSHIP_TH) -oinc $(ROCKET_TH_INCLUDE) \
 		--repl-seq-mem -c:$(STARSHIP_TH):-o:$(ROCKET_TH_MEMCONF) \
@@ -159,6 +133,7 @@ $(ROCKET_ROM_HEX): $(ROCKET_DTS)
 $(ROCKET_ROM): $(ROCKET_ROM_HEX) $(ROCKET_ROMCONF)
 	mkdir -p $(ROCKET_BUILD)
 	$(ROCKET_SRC)/scripts/vlsi_rom_gen $(ROCKET_ROMCONF) $< > $@
+	 @echo romgen complete!
 
 verilog: $(VERILOG_SRC)
 verilog-debug: verilog
@@ -195,6 +170,15 @@ CHISEL_DEFINE 	:= +define+PRINTF_COND=$(TB_TOP).printf_cond	\
 				   +define+RANDOMIZE_INVALID_ASSIGN				\
 				   +define+RANDOMIZE_DELAY=0.1
 
+
+#######################################
+#                                      
+#         Spike & testcase
+#                                      
+#######################################
+
+# Experience: If you don't have `make clean`, you can comment the following part
+
 SPIKE_DIR		:= $(SRC)/riscv-isa-sim
 SPIKE_SRC		:= $(shell find $(SPIKE_DIR) -name "*.cc" -o -name "*.h" -o -name "*.c")
 SPIKE_BUILD		:= $(BUILD)/spike
@@ -203,6 +187,23 @@ SPIKE_INCLUDE	:= $(SPIKE_DIR) $(SPIKE_DIR)/cosim $(SPIKE_DIR)/fdt $(SPIKE_DIR)/f
 			       $(SPIKE_DIR)/riscv $(SPIKE_DIR)/softfloat $(SPIKE_BUILD)
 
 export LD_LIBRARY_PATH=$(SPIKE_BUILD)
+
+$(SPIKE_BUILD)/Makefile:
+	mkdir -p $(SPIKE_BUILD)
+	cd $(SPIKE_BUILD); $(SCL_PREFIX) $(SPIKE_DIR)/configure
+
+$(SPIKE_LIB)&: $(SPIKE_SRC) $(SPIKE_BUILD)/Makefile
+	cd $(SPIKE_BUILD); $(SCL_PREFIX) make -j$(shell nproc) $(notdir $(SPIKE_LIB))
+
+$(TESTCASE_HEX): $(TESTCASE_ELF)
+	riscv64-unknown-elf-objcopy --gap-fill 0			\
+		--set-section-flags .bss=alloc,load,contents	\
+		--set-section-flags .sbss=alloc,load,contents	\
+		--set-section-flags .tbss=alloc,load,contents	\
+		-O binary $< $(TESTCASE_BIN)
+	od -v -An -tx8 $(TESTCASE_BIN) > $@
+	rm $(TESTCASE_BIN)
+
 
 #######################################
 #
