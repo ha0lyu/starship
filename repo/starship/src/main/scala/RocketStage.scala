@@ -3,7 +3,7 @@ package starship
 
 import mainargs._
 import chisel3.RawModule
-import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.stage.{ChiselGeneratorAnnotation}
 import firrtl.options.{Dependency, PhaseManager, TargetDirAnnotation}
 import freechips.rocketchip.diplomacy.LazyModule
 import org.chipsalliance.cde.config.{Config, Parameters}
