@@ -12,13 +12,13 @@
 `define MEM_RPL  `MEM_TOP.mem_ext
 
 `ifdef TARGET_BOOM
-  `define CPU_TOP  `TILE_TOP.tile_reset_domain_boom_tile
+  `define CPU_TOP  `TILE_TOP.element_reset_domain_boom_tile   // tile_reset_domain_boom_tile
   `define PIPELINE `CPU_TOP.core
 `elsif TARGET_CVA6
   `define CPU_TOP  `TILE_TOP.tile_reset_domain_cva6_tile
   `define PIPELINE `CPU_TOP.core.i_ariane.i_cva6
 `else
-  `define CPU_TOP  `TILE_TOP.tile_reset_domain_tile
+  `define CPU_TOP  `TILE_TOP.element_reset_domain_rockettile  // tile_reset_domain_tile
   `define PIPELINE `CPU_TOP.core
 `endif
 
