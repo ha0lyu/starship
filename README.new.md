@@ -3,18 +3,64 @@ We want to run starship on verilator and build latest version of BOOM & Rocket.
 
 ## Build starship on verilator
 
-OS: Ubuntu 20.04 LTS
+OS: Ubuntu 20.04 LTS or Ubuntu 22.04 LTS
 
 0. riscv toolchain installed
 
+```bash
+apt install -y autoconf automake autotools-dev curl python3 python3-pip python3-tomli libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build git cmake libglib2.0-dev libslirp-dev
+git clone https://github.com/riscv/riscv-gnu-toolchain
+cd riscv-gnu-toolchain && ./configure --prefix=/opt/riscv --enable-multilib && make -j `nproc`
+
+# environment variable is needed
+export PATH="$PATH:/opt/riscv/bin"
+export RISCV="/opt/riscv"
+```
+
 1. Install Verilator v5.024 (ref: https://github.com/sycuricon/starship/issues/20)
+
+```bash
+apt install -y help2man perl make g++ libfl2 libfl-dev zlib1g
+
+# To build or run Verilator, the following are optional but should be installed for good performance
+apt install -y ccache mold libgoogle-perftools-dev numactl 
+
+git clone https://github.com/verilator/verilator && unset VERILATOR_ROOT && cd verilator && git checkout v5.024 && autoconf && ./configure && make -j `nproc` && make install
+```
 
 2. Insatll sbt (ref: https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Linux.html)
 
-3. git clone git clone https://github.com/riscv-zju/riscv-starship.git
-   cd ./riscv-starship && git submodule update --init --recursive --progress
+```bash
+apt install apt-transport-https curl gnupg -yqq 
+echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | tee /etc/apt/sources.list.d/sbt.list 
+echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | tee /etc/apt/sources.list.d/sbt_old.list 
+curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/scalasbt-release.gpg --import 
+chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg 
 
-4. make patch; make vlt -j12
+apt update 
+apt install -y openjdk-11-jdk 
+apt install -y sbt 
+```
+
+3. git clone & install mill
+
+```bash
+git clone https://github.com/ha0lyu/starship.git 
+git checkout -b verilator origin/verilator 
+
+# /usr/local/bin should be included in the environment variable
+curl -L https://github.com/com-lihaoyi/mill/releases/download/0.10.15/0.10.15 > /usr/local/bin/mill 
+chmod +x /usr/local/bin/mill 
+```
+
+4. build
+
+```bash
+cd riscv-starship
+git submodule update --init --recursive --progress
+make patch
+make vlt -j12
+```
     
 **wait for a while, and you will see:**
 ```
