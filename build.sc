@@ -1,14 +1,13 @@
 import mill._
 import scalalib._
-import $file.repo.`rocket-chip`.dependencies.hardfloat.{common => hardfloatCommon}
-import $file.repo.`rocket-chip`.dependencies.cde.{common => cdeCommon}
-import $file.repo.`rocket-chip`.dependencies.diplomacy.{common => diplomacyCommon}
-import $file.repo.`rocket-chip`.{common => rocketChipCommon}
+import $file.repo.`rocket-chip`.dependencies.hardfloat.common
+import $file.repo.`rocket-chip`.dependencies.cde.common
+import $file.repo.`rocket-chip`.dependencies.diplomacy.common
+import $file.repo.`rocket-chip`.common
 
 val chiselVersion = "3.6.1"
 val defaultScalaVersion = "2.13.9"
 val pwd = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
-// val pwd = os.Path(sys.env("NOOP_HOME"))
 
 object v {
   def chiselIvy: Option[Dep] = Some(ivy"edu.berkeley.cs::chisel3:${chiselVersion}")
@@ -28,49 +27,51 @@ trait HasThisChisel extends SbtModule {
 }
 
 object rocketchip extends RocketChip
-trait RocketChip extends rocketChipCommon.RocketChipModule with HasThisChisel {
+trait RocketChip extends $file.repo.`rocket-chip`.common.RocketChipModule with HasThisChisel {
   override def scalaVersion: T[String] = T(defaultScalaVersion)
   override def millSourcePath = pwd / "repo" / "rocket-chip"
   def dependencyPath = pwd / "repo" / "rocket-chip" / "dependencies"
-  def macrosModule = macros
-  def hardfloatModule = hardfloat
-  def cdeModule = cde
-  def diplomacyModule = diplomacy
+  def macrosModule = Macros
+  def hardfloatModule = Hardfloat
+  def cdeModule = CDE
+  def diplomacyModule = Diplomacy
   def diplomacyIvy = None
   def mainargsIvy = ivy"com.lihaoyi::mainargs:0.5.4"
   def json4sJacksonIvy = ivy"org.json4s::json4s-jackson:4.0.6"
   override def moduleDeps = super.moduleDeps // ++ Seq(difftest)
-  object macros extends Macros
-  trait Macros extends rocketChipCommon.MacrosModule with SbtModule {
-    def scalaVersion: T[String] = T(defaultScalaVersion)
-    def scalaReflectIvy = ivy"org.scala-lang:scala-reflect:${defaultScalaVersion}"
-  }
 
-  object hardfloat extends Hardfloat
-  trait Hardfloat extends hardfloatCommon.HardfloatModule with HasThisChisel {
-    override def scalaVersion: T[String] = T(defaultScalaVersion)
-    override def millSourcePath = dependencyPath / "hardfloat" / "hardfloat"
-  }
+  object Macros
+    extends $file.repo.`rocket-chip`.common.MacrosModule
+      with SbtModule {
+      def scalaVersion: T[String] = T(defaultScalaVersion)
+      def scalaReflectIvy = ivy"org.scala-lang:scala-reflect:${defaultScalaVersion}"
+    }
 
-  object cde extends CDE
-  trait CDE extends cdeCommon.CDEModule with ScalaModule {
-    def scalaVersion: T[String] = T(defaultScalaVersion)
-    override def millSourcePath = dependencyPath / "cde" / "cde"
-  }
+  object Hardfloat 
+    extends $file.repo.`rocket-chip`.dependencies.hardfloat.common.HardfloatModule with HasThisChisel {
+      override def scalaVersion: T[String] = T(defaultScalaVersion)
+      override def millSourcePath = dependencyPath / "hardfloat" / "hardfloat"
+    }
 
-  object diplomacy extends Diplomacy
-  trait Diplomacy extends diplomacyCommon.DiplomacyModule with ScalaModule {
-    def scalaVersion: T[String] = T(defaultScalaVersion)
-    override def millSourcePath = dependencyPath / "diplomacy" / "diplomacy"
+  object CDE 
+    extends $file.repo.`rocket-chip`.dependencies.cde.common.CDEModule with ScalaModule {
+      def scalaVersion: T[String] = T(defaultScalaVersion)
+      override def millSourcePath = dependencyPath / "cde" / "cde"
+    }
 
-    def chiselModule: Option[ScalaModule] = None
-    def chiselPluginJar: T[Option[PathRef]] = None
-    def chiselIvy: Option[Dep] = v.chiselIvy
-    def chiselPluginIvy: Option[Dep] = v.chiselPluginIvy
+  object Diplomacy 
+    extends $file.repo.`rocket-chip`.dependencies.diplomacy.common.DiplomacyModule with ScalaModule {
+      def scalaVersion: T[String] = T(defaultScalaVersion)
+      override def millSourcePath = dependencyPath / "diplomacy" / "diplomacy"
 
-    def cdeModule = cde
-    def sourcecodeIvy = ivy"com.lihaoyi::sourcecode:0.3.1"
-  }
+      def chiselModule: Option[ScalaModule] = None
+      def chiselPluginJar: T[Option[PathRef]] = None
+      def chiselIvy: Option[Dep] = v.chiselIvy
+      def chiselPluginIvy: Option[Dep] = v.chiselPluginIvy
+
+      def cdeModule = CDE
+      def sourcecodeIvy = ivy"com.lihaoyi::sourcecode:0.3.1"
+    }
 }
 
 trait Boom extends ScalaModule with HasThisChisel {
