@@ -267,14 +267,23 @@ gtkwave:
 
 .PHONY: clean clean-all patch
 
+## "NF == 5" is applied to starship/patch/rocket-chip/dependencies/hardfloat/hardfloat.patch
 patch:
 	find patch -name "*.patch" | \
-		awk -F/ '{print \
-			"(" \
-				"echo \"Apply " $$0 "\" && " \
-				"cd repo/" $$2 " && " \
-				"git apply --ignore-space-change --ignore-whitespace ../../" $$0 \
-			")" \
+		awk -F/ '{ \
+			if (NF == 3) { \
+				print "(" \
+					"echo \"Apply " $$0 "\" && " \
+					"cd repo/" $$2 " && " \
+					"git apply --ignore-space-change --ignore-whitespace ../../" $$0 \
+				")" \
+			} else if (NF == 5) { \
+				print "(" \
+					"echo \"Apply " $$0 "\" && " \
+					"cd repo/" $$2 "/" $$3 "/" $$4 " && " \
+					"git apply --ignore-space-change --ignore-whitespace ../../../../" $$0 \
+				")" \
+			} \
 		}' | sh
 
 clean:
