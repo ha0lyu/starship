@@ -19,6 +19,8 @@ STARSHIP_BOARD	?= vc707
 
 STARSHIP_TESTCASE	?= $(BUILD)/starship-dummy-testcase
 
-$(BUILD)/starship-dummy-testcase:
-	mkdir -p $(BUILD)
-	wget https://github.com/sycuricon/riscv-tests/releases/download/dummy/rv64ui-p-simple -O $@
+$(BUILD)/starship-dummy-testcase: conf/starship-dummy-testcase
+	@mkdir -p $(BUILD)
+	# starship-dummy-testcase is provided locally due to restricted network
+	#wget https://github.com/sycuricon/riscv-tests/releases/download/dummy/rv64ui-p-simple -O $@
+	cp $< $@
